@@ -36,3 +36,14 @@ Now try to optimize both rgb and hsv. For onlyfiles[5:15], rgb and hsv may misse
 rgb: 
 1) (80,0,0), (200, 250, 250) to (50, 0, 0): no change or worse
 2) to (100, 0, 0)
+
+
+../data/CC Lake slice/DSC00863.JPG
+../data/CC Lake slice/DSC00865.JPG
+../data/CC Lake slice/DSC00867.JPG
+../data/CC Lake slice/DSC00877.JPG
+../data/CC Lake slice/DSC00894.JPG
+../data/CC Lake slice/DSC00905.JPG
+../data/CC Lake slice/DSC00919.JPG
+../data/CC Lake slice/DSC00945.JPG
+../data/CC Lake slice/DSC00957.JPG
