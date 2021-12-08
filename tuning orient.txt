@@ -76,3 +76,12 @@ count as: correct, upside down, left-right
 3) image kszie = 7, same
 4) image fx = 0.45, better, 11, 7, 2
 5) finder range of template change, arange(0.7, 1.3, 0.025), badbadbad, 4, 6, 10...
+
+6）at home, the templates may have changed... now using template color 1, fx = 0.5
+some other condition, the result is fine. need to align well, so adjust rotation? 
+
+it is ok to facing right ... at this moment
+rotation range. 
+
+Found that using no blackwhite, still works...
+

@@ -81,21 +81,21 @@ def slice():
         cv2.imwrite(join(path, f), sliced)
 
 def rotation(fname):
-    temp0 = ToBNW('../data/templates/template_color1.png', fx = 1, ksize = 3)
-    # temp = cv2.imread('../data/templates/template_color1.png')
-    # temp0 = cv2.resize(temp, dsize = None, fx = 0.5, fy = 0.5)
-    h, w = temp0.shape[0:2]
-    # print(w, h)
+    temp = ToBNW('../data/templates/template_color1.png', ksize = 3)
+    # temp = imread()
+    # temp = cv2.resize(temp, dsize = None, fx = 0.5, fy = 0.5)
+    w, h = temp.shape[0:2]
+    print(w, h)
     # cv2.imshow('a', temp)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
-    # image1 = cv2.imread(fname)
-    image1 = ToBNW(fname, fx = 1, ksize = 5)
-    # image1 = cv2.resize(image1, None, fx = 1, fy = 1)
+    # image1 = cv2.imread('../data/CC Lake BW/Cond3/DSC00839.jpg')
+    image1 = ToBNW(fname, fx = 0.55, ksize = 5)
+    # image1 = cv2.resize(image1, dsize = (1224, 918))
     # image1 = cv2.resize(image1, dsize = None, fx = 0.25, fy = 0.25)
-    H, W = image1.shape[0:2]
-    # print(W, H)
+    W, H = image1.shape[0:2]
+    print(W, H)
     image1_flip = cv2.flip(image1, 1)
     # cv2.imshow('normal', image1)
     # cv2.imshow('flip', image1_flip)
@@ -114,8 +114,8 @@ def rotation(fname):
 
     for s in np.arange(0.7, 1.3, 0.05):
         # print(s)
-        temp = cv2.resize(temp0, None, fx = s, fy = s)
-        for i in range(0, 36):
+        temp = cv2.resize(temp, None, fx = s, fy = s)
+        for i in range(36):
         #     # the rotate takes angle in degrees
             img_rot = rotate(image1, 10 * i, mode = 'constant', reshape = False, cval = 0)
             img_rotflip = rotate(image1_flip, 10 * i, mode = 'constant', reshape = False, cval = 0)
@@ -128,42 +128,33 @@ def rotation(fname):
                 best_match_score = res_rot.max()
                 res = res_rot
                 best_img = img_rot
-                info = ('rot', i, s, temp)
+                info = ('rot', i, s)
             elif res_rotflip.max() >= best_match_score:
                 best_match_score = res_rotflip.max()
                 res = res_rotflip
                 best_img = img_rotflip
-                info = ('rotflip', i, s, temp)
+                info = ('rotflip', i, s)
     print(best_match_score, best_img.shape)
-    print(info[:3])
-
+    print(info)
 
     # plot best image orientation
     best = cv2.imread(fname)
+    best = rotate(best, 10 * info[1], mode = 'constant', reshape = False, cval = 0)
     if info[0] == 'rotflip':
         best = cv2.flip(best, 1)
-    best = rotate(best, 10 * info[1], mode = 'constant', reshape = False, cval = 0)
 
-
-    loc = np.unravel_index(res.argmax(), res.shape)
-    print(loc)
-    # # print(info)
-    # get the corresponding window
-    cornerr = loc[0]
-    cornerc = loc[1]
-    window = best[cornerr:cornerr + int(info[2]*h)+10, cornerc: cornerc + int(info[2]*w)+10, :]
-    # print(window.shape, temp.shape[0] * info[2])
-    # identify th template correlated area:
+    cv2.imshow('best', best)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    #
     # # temp_w = best_temp.shape[1]
     # # temp_h = best_temp.shape[0]
     # result_cols = W - w + 1
     # result_rows = H - h + 1
     # print(result_cols, result_rows)
-    # cv2.imshow('a', window)
+    # cv2.imshow('a', best_img)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
-    # return bests
-    return window
 
 from os import listdir
 from os.path import isfile, join
@@ -181,86 +172,14 @@ def AllBNW():
         # cv2.imwrite(join(path, f), output)
 
 def test():
-    path = "../data/CC Lake extracted/1/"
+    path = "../data/CC Lake BW/Cond1"
     Path(path).mkdir(parents=True, exist_ok=True)
     onlyfiles = [f for f in listdir('../data/CC Lake slice/') if isfile(join('../data/CC Lake slice/', f))]
     # print(onlyfiles)
-    for f in onlyfiles:
-    # for f in onlyfiles[:20]:
+    for f in onlyfiles[5:15]:
         fname = join('../data/CC Lake slice/', f)
         print(fname)
         output = rotation(fname)
-        cv2.imwrite(join(path, f), output)
-
-def rotate48(fname):
-    temp0 = ToBNW('../data/templates/template_color1.png', fx = 1, ksize = 3)
-    h, w = temp0.shape[0:2]
-
-    image1 = ToBNW(fname, fx = 1, ksize = 5)
-    H, W = image1.shape[0:2]
-    # print(W, H)
-    image1_flip = cv2.flip(image1, 1)
-    # start template matching, and look for different angles:
-    best_match_score = 0
-    res = None
-    # all available methods: methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
-
-    # cv2.TM_CCORR_NORMED, cv2.TM_CCOEFF_NORMED give correct using color_right template, exactly same
-    # if using the left template and flip,
-    method = cv2.TM_CCORR_NORMED
-
-    # scale template as well:
-    scorelst = []
-    flipscorelst = []
-    for s in [1.2]:
-        # print(s)
-        # temp = temp0
-        temp = cv2.resize(temp0, None, fx = s, fy = s)
-        for i in range(0, 36):
-        #     # the rotate takes angle in degrees
-            img_rot = rotate(image1, 10 * i, mode = 'constant', reshape = False, cval = 0)
-            img_rotflip = rotate(image1_flip, 10 * i, mode = 'constant', reshape = False, cval = 0)
-            # set reshape = true, cval = 255 good for part 4-1,2,4...
-            # print(img_rot.dtype, temp.dtype)
-            res_rot = cv2.matchTemplate(img_rot, temp, method)
-            scorelst.append((res_rot.max(), i))
-            res_rotflip = cv2.matchTemplate(img_rotflip, temp, method)
-            flipscorelst.append((res_rotflip.max(), i))
-            # print(res_rot)
-            if res_rot.max() >= best_match_score:
-                best_match_score = res_rot.max()
-                res = res_rot
-                best_img = img_rot
-                info = ('rot', i, s, temp)
-            elif res_rotflip.max() >= best_match_score:
-                best_match_score = res_rotflip.max()
-                res = res_rotflip
-                best_img = img_rotflip
-                info = ('rotflip', i, s, temp)
-    print(best_match_score, best_img.shape)
-    print(info[:3])
-
-    print('------------')
-    for i in flipscorelst:
-        print(i)
-    # print(flipscorelst)
-    # plot best image orientation
-    # best = cv2.imread(fname)
-    # best = rotate(best, 10 * info[1], mode = 'constant', reshape = False, cval = 0)
-    # if info[0] == 'rotflip':
-    #     best = cv2.flip(best, 1)
-    # print('shapes of template and image', info[3].shape, best.shape)
-    # cv2.imshow('best', best)
-def display(fname):
-    best = cv2.flip(cv2.imread(fname), 1)
-    best1 = rotate(best, 10 * 18, mode = 'constant', reshape = False, cval = 0)
-    best2 = rotate(best, 10 * 19, mode = 'constant', reshape = False, cval = 0)
-    best3 = rotate(best, 10 * 20, mode = 'constant', reshape = False, cval = 0)
-    cv2.imshow('18', best1)
-    cv2.imshow('19', best2)
-    cv2.imshow('20', best3)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     # get_template()
@@ -269,5 +188,3 @@ if __name__ == '__main__':
     # AllBNW()
     # slice()
     test()
-    # rotate48('../data/CC Lake slice/DSC00848.jpg')
-    # display('../data/CC Lake slice/DSC00848.jpg')
