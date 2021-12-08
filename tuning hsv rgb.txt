@@ -1,0 +1,38 @@
+Cond1: 
+	mask = cv2.inRange(hsv, (0,0,0), (100, 255, 255))
+    	edge = cv2.Canny(mask, 20, 250)
+
+Cond2: 
+
+Tuning hsv:
+1) h 100, s to 240 better; but miss some area
+2) h 100, s 255, v 240 better: like s
+3) h 100, s 250, s 250: same
+4) h 80: missing more
+5) h 110: noisy, but maybe useful in edge
+6) h 105: 
+
+sliced out ruler. 
+Not so bad condition:
+    rgbmask = cv2.inRange(image, (80,0,0), (200, 250, 250))
+    hsv0 = cv2.inRange(hsv, (0,0,0), (100, 240, 240))
+
+    rgb1 = np.copy(rgbmask).astype(np.uint8)
+    hsv1 = np.copy(hsv0).astype(np.int)
+    hsv2 = np.abs(255 - hsv1)
+    # print(rgb1)
+    # print(hsv1)
+    # print(hsv2)
+    # print(mask.dtype)
+    combine = np.uint8((hsv2 + rgb1)/2)
+    combine[combine < 130] = 0
+    # print(combine.dtype)
+    mask = cv2.blur(combine, ksize = (ksize, ksize))
+    edge = cv2.Canny(mask, 100, 200)
+
+
+Now try to optimize both rgb and hsv. For onlyfiles[5:15], rgb and hsv may missed many in the middle. 
+
+rgb: 
+1) (80,0,0), (200, 250, 250) to (50, 0, 0): no change or worse
+2) to (100, 0, 0)
