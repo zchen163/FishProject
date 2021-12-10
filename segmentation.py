@@ -29,28 +29,36 @@ from skimage import data
 from skimage.filters import gaussian
 from skimage.segmentation import active_contour
 # image_gray = color.rgb2gray(image)
-image_gray = cv2.imread('../data/CC Lake/DSC00840.jpg', 0)
-image_gray = cv2.resize(image_gray, None, fx = 0.125, fy = 0.125)
+image_gray = cv2.imread('../data/CC Lake extracted/2/DSC00899.jpg', 0)
+# image_gray = cv2.resize(image_gray, None, fx = 0.125, fy = 0.125)
 # image_show(image_gray)
 print(image_gray.shape)
 m, n = image_gray.shape
 
-s = np.linspace(0, 2*np.pi, 2000)
-r = 215 + 60*np.sin(s)
-c = 250 + 150*np.cos(s)
+s = np.linspace(0, 2*np.pi, 500)
+r = m//2 + m//2*np.sin(s)
+c = n//2 + n//2*np.cos(s)
 init = np.array([r, c]).T
 
-snake = active_contour(gaussian(image_gray, 3, preserve_range=False),
-                       init, alpha=0.055, beta=5, gamma=0.01)
-#
-fig, ax = plt.subplots(figsize=(7, 7))
-ax.imshow(image_gray, cmap=plt.cm.gray)
-ax.plot(init[:, 1], init[:, 0], '--r', lw=3)
-ax.plot(snake[:, 1], snake[:, 0], '-b', lw=3)
-ax.set_xticks([]), ax.set_yticks([])
-ax.axis([0, image_gray.shape[1], image_gray.shape[0], 0])
+# try parameters
+a_range = [0.001, 0.01, 0.1, 0.2, 0.5, 1]
+b_range = [0.01, 0.1, 1,5, 10, 20]
+g_range = [0.001, 0.01, 0.1, 0.5, 1]
+for a in a_range:
+    for b in b_range:
+        for g in g_range:
 
-plt.show()
+            snake = active_contour(gaussian(image_gray, 3, preserve_range=False),
+                                   init, alpha=a, beta=b, gamma=g)
+#
+            fig, ax = plt.subplots(figsize=(7, 7))
+            ax.imshow(image_gray, cmap=plt.cm.gray)
+            ax.plot(init[:, 1], init[:, 0], '--r', lw=3)
+            ax.plot(snake[:, 1], snake[:, 0], '-b', lw=3)
+            ax.set_xticks([]), ax.set_yticks([])
+            ax.axis([0, image_gray.shape[1], image_gray.shape[0], 0])
+            fname = '../data/contour/' + str(a) + '_' + str(b) + '_' + str(g) + '.png'
+            plt.savefig(fname)
 
 
 # cv2.imshow('a', image)
