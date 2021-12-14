@@ -3,18 +3,22 @@ import numpy as np
 from scipy.ndimage import rotate
 
 def get_template():
-    image = cv2.imread('../data/CC Lake/DSC00857.jpg')
+    image = cv2.imread('../data/CC Lake/DSC00957.jpg')
     # image = cv2.imread('../data/CC Lake/DSC00840.jpg')
     # m, n = image.shape
     # print(m, n)
 
     # new shape = (1224, 918)
-    image1 = cv2.resize(image, dsize = (1224, 918))
+    image1 = cv2.resize(np.copy(image), dsize = (1224, 918))
     # print(image1.shape)
 
     # slice template, 90*450 or 1by5
-    template = image1[405:545, 380:1000]
-    cv2.imwrite("../data/templates/color4.png", cv2.flip(template, 0))
+    # image DSC00839.jpg, [390:500, 270:740], 1.png
+    # image DSC00866.jpg, [410:540, 450:950], 2.png
+    # image DSC00857.jpg, [395:550, 365:1040], 3.png
+    # image DSC00957.jpg, [380:530, 410:950], 4.png
+    template = image1[380:530, 410:950]
+    cv2.imwrite("../data/templates/4.png", cv2.flip(template, 0))
     # cv2.imwrite("../data/templates/template_color_right1.png", cv2.flip(template, 1))
     cv2.imshow('a', template)
     cv2.waitKey(0)
@@ -108,14 +112,42 @@ def match(image, temp0, slow=0.7, shigh=1.3, method = cv2.TM_CCORR_NORMED):
                 info = ('rotflip', i, s, temp)
     return best_match_score, res, info
 
+def match1(image, temp0, slow=0.7, shigh=1.3, method = cv2.TM_CCORR_NORMED):
+    # get flipped image
+    best_match_score = 0
+    image1 = np.copy(image)
+    image1_flip = cv2.flip(image1, 1)
+    # change template sizes
+    for s in np.arange(slow, shigh, 0.05):
+        temp = cv2.resize(temp0, None, fx = s, fy = s)
+        # search for angles
+        for i in [-3, -2, -1, 0, 1, 2, 3, 15, 16, 17, 18, 19, 20, 21]:
+        # for i in range(0, 36):
+        #     # the rotate takes angle in degrees
+            img_rot = rotate(image1, 10 * i, mode = 'constant', reshape = False, cval = 0)
+            img_rotflip = rotate(image1_flip, 10 * i, mode = 'constant', reshape = False, cval = 0)
+            res_rot = cv2.matchTemplate(img_rot, temp, method)
+            res_rotflip = cv2.matchTemplate(img_rotflip, temp, method)
+            if res_rot.max() >= best_match_score:
+                best_match_score = res_rot.max()
+                res = res_rot
+                best_img = img_rot
+                info = ('rot', i, s, temp)
+            elif res_rotflip.max() >= best_match_score:
+                best_match_score = res_rotflip.max()
+                res = res_rotflip
+                best_img = img_rotflip
+                info = ('rotflip', i, s, temp, best_img)
+    return best_match_score, res, info
 
 def rotation(fname):
-    temp1 = ToBNW('../data/templates/color1.png', fx = 1, ksize = 3)
-    temp2 = ToBNW('../data/templates/color3.png', fx = 1, ksize = 3)
-    temp3 = ToBNW('../data/templates/color4.png', fx = 1, ksize = 3)
+    temp1 = ToBNW('../data/templates/1.png', fx = 1, ksize = 3)
+    temp2 = ToBNW('../data/templates/2.png', fx = 1, ksize = 3)
+    temp3 = ToBNW('../data/templates/3.png', fx = 1, ksize = 3)
+    temp4 = ToBNW('../data/templates/4.png', fx = 1, ksize = 3)
     # temp = cv2.imread('../data/templates/template_color1.png')
     # h, w = temp0.shape[0:2]
-    templst = [temp1, temp2, temp3]
+    templst = [temp1, temp2, temp3, temp4]
     image = ToBNW(fname, fx = 1, ksize = 5)
 
     H, W = image.shape[0:2]
@@ -141,6 +173,10 @@ def rotation(fname):
     scorelst.append(score3)
     reslst.append(res3)
     infolst.append(info3)
+    score4, res4, info4 = match(image, temp3, slow=0.7, shigh=1.2)
+    scorelst.append(score4)
+    reslst.append(res4)
+    infolst.append(info4)
     # print('temp1', best_match_score)
     # print(score1, info1[:3])
     # print(score2, info2[:3])
@@ -201,8 +237,8 @@ def AllBNW():
         # cv2.imwrite(join(path, f), output)
 
 def test():
-    path_oriented = "../data/CC Lake oriented/5/"
-    path_extracted = "../data/CC Lake extracted/2/"
+    path_oriented = "../data/CC Lake oriented/6/"
+    path_extracted = "../data/CC Lake extracted/3/"
     Path(path_oriented).mkdir(parents=True, exist_ok=True)
     Path(path_extracted).mkdir(parents=True, exist_ok=True)
     onlyfiles = [f for f in listdir('../data/CC Lake slice/') if isfile(join('../data/CC Lake slice/', f))]
@@ -210,9 +246,10 @@ def test():
     examples = ['DSC00839.jpg', 'DSC00857.jpg', 'DSC00861.jpg', 'DSC00866.jpg', 'DSC00871.jpg']
     # for f in examples:
     manuallst = []
-    for f in onlyfiles[20:]:
+    for f in onlyfiles[30:]:
         fname = join('../data/CC Lake slice/', f)
-        print('Now working on', f)
+        print('----Now working on ----')
+        print(f)
         best, window, manual = rotation(fname)
         cv2.imwrite(join(path_oriented, f), best)
         cv2.imwrite(join(path_extracted, f), window)
@@ -282,15 +319,62 @@ def rotate48(fname):
     # print('shapes of template and image', info[3].shape, best.shape)
     # cv2.imshow('best', best)
 def display(fname):
-    best = cv2.flip(cv2.imread(fname), 1)
-    best1 = rotate(best, 10 * 18, mode = 'constant', reshape = False, cval = 0)
-    best2 = rotate(best, 10 * 19, mode = 'constant', reshape = False, cval = 0)
-    best3 = rotate(best, 10 * 20, mode = 'constant', reshape = False, cval = 0)
-    cv2.imshow('18', best1)
-    cv2.imshow('19', best2)
-    cv2.imshow('20', best3)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+
+    temp1 = ToBNW('../data/templates/1.png', fx = 1, ksize = 3)
+    temp2 = ToBNW('../data/templates/2.png', fx = 1, ksize = 3)
+    temp3 = ToBNW('../data/templates/3.png', fx = 1, ksize = 3)
+    temp4 = ToBNW('../data/templates/4.png', fx = 1, ksize = 3)
+    templst = [temp1, temp2, temp3, temp4]
+    image = ToBNW(fname, fx = 1, ksize = 5)
+
+    H, W = image.shape[0:2]
+    # start template matching, and look for different angles:
+    # all available methods: methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
+    method = cv2.TM_CCORR_NORMED
+
+    scorelst, reslst, infolst = [], [], []
+    score1, res1, info1 = match1(image, temp1, slow=0.7, shigh=1.3)
+    scorelst.append(score1)
+    reslst.append(res1)
+    infolst.append(info1)
+    score2, res2, info2 = match1(image, temp2, slow=0.7, shigh=1.3)
+    scorelst.append(score2)
+    reslst.append(res2)
+    infolst.append(info2)
+    score3, res3, info3 = match1(image, temp3, slow=0.7, shigh=1.2)
+    scorelst.append(score3)
+    reslst.append(res3)
+    infolst.append(info3)
+    score4, res4, info4 = match1(image, temp3, slow=0.7, shigh=1.2)
+    scorelst.append(score4)
+    reslst.append(res4)
+    infolst.append(info4)
+
+    idx = np.array(scorelst).argmax()
+    print(scorelst, idx)
+    print(infolst[idx][:3])
+    h, w = infolst[idx][3].shape[0:2]
+
+    loc = np.unravel_index(reslst[idx].argmax(), reslst[idx].shape)
+    print(loc)
+    # print(info[3].shape, 'temp w and h', w, h, 'image W and H', W, H)
+    # # # print(info)
+    # get the corresponding window
+    cornerr = loc[0]
+    cornerc = loc[1]
+    image_out = np.copy(image)
+    image_out = cv2.circle(image_out, (cornerc, cornerr), radius=5, color=(0, 0, 255), thickness=1)
+    image_out = cv2.circle(image_out, (cornerc + w, cornerr + h), radius=5, color=(0, 0, 255), thickness=-1)
+
+    # f, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True)
+    # ax1.imshow(image_out, cmap=plt.cm.gray)
+    # # ax2.plot(snake1[:, 1], snake1[:, 0], '.b', lw=1)
+    # ax2.imshow(snake1[:, 1], snake1[:, 0], '.b', lw=1)
+    # ax3.imshow(rmask, cmap=plt.cm.gray)
+    # ax4.plot(snake2[:, 1], snake2[:, 0], '.b', lw=1)
+    #
+    # plt.show()
+
 
 if __name__ == '__main__':
     # get_template()
@@ -298,6 +382,6 @@ if __name__ == '__main__':
     # ToBNW('../data/CC Lake slice/DSC00844.jpg', fx = 0.5)
     # AllBNW()
     # slice()
-    test()
+    # test()
     # rotate48('../data/CC Lake slice/DSC00848.jpg')
-    # display('../data/CC Lake slice/DSC00848.jpg')
+    display('../data/CC Lake slice/DSC00902.jpg')
